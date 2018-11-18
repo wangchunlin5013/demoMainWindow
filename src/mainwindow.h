@@ -10,6 +10,7 @@
 #include <QComboBox>
 #include <QSpinBox>
 #include <QToolBox>
+#include <QToolBar>
 #include <QFontComboBox>
 #include <QToolButton>
 #include <QTextCharFormat>
@@ -44,7 +45,7 @@ private:
     QAction *m_newFileAction;
     QAction *m_printTextAction;
     QAction *m_printImageAction;
-    QAction *exitAction;
+    QAction *m_exitAction;
     QAction *m_copyAction;
     QAction *m_cutAction;
     QAction *m_pasteAction;
