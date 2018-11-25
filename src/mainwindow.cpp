@@ -1,6 +1,13 @@
 #include "mainwindow.h"
 #include "showwidget.h"
 #include <QApplication>
+#include <QFileDialog>
+#include <QTextStream>
+#include <QtPrintSupport/QPrintDialog>
+#include <QPainter>
+#include <QPrinter>
+#include <QImage>
+#include <QMatrix>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -30,10 +37,12 @@ void MainWindow::createActions()
     m_openFileAction = new QAction(QIcon("images/open.png"),tr("open"),this);
     m_openFileAction->setShortcut(QString("Ctrl+O"));
     m_openFileAction->setStatusTip(tr("open one file"));
+    connect(m_openFileAction, SIGNAL(triggered(bool)), this, SLOT(showOpenFile()));
 
     m_newFileAction = new QAction(QIcon("images/new.png"),tr("new"),this);
     m_newFileAction->setShortcut(QString("Ctrl+N"));
     m_newFileAction->setStatusTip(tr("new a file"));
+    connect(m_newFileAction, SIGNAL(triggered(bool)), this, SLOT(showNewFile()));
 
     m_exitAction = new QAction(QIcon("images/exit.png"),tr("exit"),this);
     m_exitAction->setShortcut(QString("Ctrl+Q"));
@@ -60,30 +69,39 @@ void MainWindow::createActions()
 
     m_printTextAction = new QAction(QIcon("images/printText.png"),tr("printtext"),this);
     m_printTextAction->setStatusTip(tr("print a file"));
+    connect(m_printTextAction, SIGNAL(triggered(bool)), this, SLOT(showPrintText()));
 
     m_printImageAction = new QAction(QIcon("images/printImage.png"),tr("printimage"),this);
     m_printImageAction->setStatusTip(tr("print a image"));
+    connect(m_printImageAction, SIGNAL(triggered(bool)), this, SLOT(showPrintImage()));
 
     m_zoomInAction = new QAction(QIcon("images/zoomin.png"),tr("zoomin"),this);
     m_zoomInAction->setStatusTip(tr("zoom in image"));
+    connect(m_zoomInAction, SIGNAL(triggered(bool)), this, SLOT(showZoomIn()));
 
     m_zoomOutAction = new QAction(QIcon("images/zoomout.png"),tr("zoomout"),this);
     m_zoomOutAction->setStatusTip(tr("zoom out image"));
+    connect(m_zoomOutAction, SIGNAL(triggered(bool)), this, SLOT(showZoomOut()));
 
     m_rotate90Action = new QAction(QIcon("images/rotate90.png"),tr("rotate90"),this);
     m_rotate90Action->setStatusTip(tr("zoom image 90"));
+    connect(m_rotate90Action, SIGNAL(triggered(bool)), this, SLOT(showRotate90()));
 
     m_rotate180Action = new QAction(QIcon("images/rotate180.png"),tr("rotate180"),this);
     m_rotate180Action->setStatusTip(tr("zoom image 180"));
+    connect(m_rotate180Action, SIGNAL(triggered(bool)), this, SLOT(showRotate180()));
 
     m_rotate270Action = new QAction(QIcon("images/rotate270.png"),tr("rotate270"),this);
     m_rotate270Action->setStatusTip(tr("zoom image 270"));
+    connect(m_rotate270Action, SIGNAL(triggered(bool)), this, SLOT(showRotate270()));
 
     m_mirrorVerticalAction = new QAction(QIcon("images/mirrorVertical.png"),tr("mirrorVertical"),this);
     m_mirrorVerticalAction->setStatusTip(tr("mirror image vertical"));
+    connect(m_mirrorVerticalAction, SIGNAL(triggered(bool)), this, SLOT(showMirrorVertical()));
 
     m_mirrorHorizontalAction = new QAction(QIcon("images/mirrorHorizontal.png"),tr("mirrorHorizontal"),this);
     m_mirrorHorizontalAction->setStatusTip(tr("mirror image horizontal"));
+    connect(m_mirrorHorizontalAction, SIGNAL(triggered(bool)), this, SLOT(showMirrorHorizontal()));
 
     m_undoAction = new QAction(QIcon("images/undo.png"),tr("undo"),this);
     m_redoAction = new QAction(QIcon("images/redo.png"),tr("redo"),this);
@@ -142,10 +160,138 @@ void MainWindow::createTooBars()
 
 void MainWindow::loadFile(const QString &fileName)
 {
-
+//    printf("file name:%s\n",fileName.data());
+    QFile file(fileName);
+    if(file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream textStream(&file);
+        while(!textStream.atEnd())
+        {
+            m_showWidget->m_text->append(textStream.readLine());
+//            printf("read line\n");
+        }
+//        printf("end\n");
+    }
 }
 
 void MainWindow::mergeFormat(QTextCharFormat &format)
 {
 
+}
+
+void MainWindow::showNewFile()
+{
+    MainWindow *newMainWindow = new MainWindow;
+    newMainWindow->show();
+}
+
+void MainWindow::showOpenFile()
+{
+    m_fileName = QFileDialog::getOpenFileName(this);
+    if(!m_fileName.isEmpty())
+    {
+        if(m_showWidget->m_text->document()->isEmpty())
+        {
+            loadFile(m_fileName);
+        }
+        else
+        {
+            MainWindow *newMainWindow = new MainWindow;
+            newMainWindow->show();
+            newMainWindow->loadFile(m_fileName);
+        }
+    }
+}
+
+void MainWindow::showPrintText()
+{
+    QPrinter printer;
+    QPrintDialog printDialog(&printer,this);
+    if(printDialog.exec())
+    {
+        QTextDocument *doc = m_showWidget->m_text->document();
+        doc->print(&printer);
+    }
+}
+
+void MainWindow::showPrintImage()
+{
+    QPrinter printer;
+    QPrintDialog printDialog(&printer,this);
+    if(printDialog.exec())
+    {
+        QPainter painter(&printer);
+        QRect rect = painter.viewport();
+        QSize size = m_img->size();
+        size.scale(rect.size(), Qt::KeepAspectRatio);
+        painter.setViewport(rect.x(), rect.y(), size.width(), size.height());
+        painter.setWindow(m_img->rect());
+        painter.drawImage(0, 0, *m_img);
+    }
+}
+
+void MainWindow::showZoomIn()
+{
+    if(m_img->isNull())
+        return;
+    QMatrix martix;
+    martix = martix.scale(2,2);
+    *m_img = m_img->transformed(martix);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showZoomOut()
+{
+    if(m_img->isNull())
+        return;
+    QMatrix martix;
+    martix = martix.scale(0.5, 0.5);
+    *m_img = m_img->transformed(martix);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showRotate90()
+{
+    if(m_img->isNull())
+        return;
+    QMatrix matrix;
+    matrix.rotate(90);
+    *m_img = m_img->transformed(matrix);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showRotate180()
+{
+    if(m_img->isNull())
+        return;
+    QMatrix matrix;
+    matrix.rotate(180);
+    *m_img = m_img->transformed(matrix);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showRotate270()
+{
+    if(m_img->isNull())
+        return;
+    QMatrix matrix;
+    matrix.rotate(270);
+    *m_img = m_img->transformed(matrix);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showMirrorVertical()
+{
+    if(m_img->isNull())
+        return;
+    *m_img = m_img->mirrored(false, true);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
+}
+
+void MainWindow::showMirrorHorizontal()
+{
+    if(m_img->isNull())
+        return;
+    *m_img = m_img->mirrored(true, false);
+    m_showWidget->m_imageLabel->setPixmap(QPixmap::fromImage(*m_img));
 }

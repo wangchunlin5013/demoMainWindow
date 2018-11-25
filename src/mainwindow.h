@@ -32,6 +32,19 @@ public:
     void loadFile(const QString &fileName);
     void mergeFormat(QTextCharFormat &format);
 
+protected slots:
+    void showNewFile();
+    void showOpenFile();
+    void showPrintText();
+    void showPrintImage();
+    void showZoomIn();
+    void showZoomOut();
+    void showRotate90();
+    void showRotate180();
+    void showRotate270();
+    void showMirrorVertical();
+    void showMirrorHorizontal();
+
 private:
     QMenu *m_fileMenu;
     QMenu *m_zoomMenu;

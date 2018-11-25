@@ -6,7 +6,6 @@ ShowWidget::ShowWidget(QWidget *parent)
 {
     m_img = new QImage;
     m_imageLabel = new QLabel;
-    m_imageLabel->setScaledContents(true);
     m_text = new QTextEdit;
     QHBoxLayout *mainLayout = new QHBoxLayout(this);
     mainLayout->addWidget(m_imageLabel);
